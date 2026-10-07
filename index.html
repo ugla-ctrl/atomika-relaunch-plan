@@ -250,6 +250,41 @@
 
   footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--rule); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  /* Silo descent: ambient scroll-linked background, independent of page content */
+  #silo {
+    position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+    background: var(--ground);
+  }
+  #silo .shaft {
+    position: absolute; inset: -25% -25%;
+    background:
+      repeating-radial-gradient(circle at 50% 42%, rgba(168,96,27,.08) 0 1px, transparent 1px 58px),
+      repeating-radial-gradient(circle at 50% 42%, rgba(168,96,27,.04) 0 1px, transparent 1px 21px);
+    transform: translateY(0) scale(1.08);
+    will-change: transform;
+  }
+  #silo .vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 30%, transparent 30%, rgba(0,0,0,.5) 100%);
+    opacity: .4; will-change: opacity;
+  }
+  @media (prefers-color-scheme: dark) { #silo .vignette { opacity: .55; } }
+  :root[data-theme="dark"] #silo .vignette { opacity: .55; }
+  #depth-readout {
+    position: fixed; right: 16px; bottom: 16px; z-index: 40;
+    display: flex; align-items: baseline; gap: 7px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); background: var(--panel);
+    border: 1px solid var(--rule); padding: 7px 11px;
+    pointer-events: none;
+  }
+  #depth-readout .dr-label { color: var(--ink-3); }
+  #depth-readout #depth-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  #depth-readout .dr-unit { color: var(--ink-3); }
+  @media (max-width: 560px) { #depth-readout { font-size: 10px; right: 10px; bottom: 10px; padding: 6px 9px; } }
+  @media (prefers-reduced-motion: reduce) { #silo .shaft, #silo .vignette { transition: none !important; } }
+
   /* Masthead: official ATOMIKA wordmark, inherits ink colour in both themes */
   h1.masthead { margin: 0 0 14px; line-height: 1; }
   .atomika-mark { display: block; width: min(100%, 560px); height: auto; color: var(--ink); }
@@ -336,9 +371,51 @@
     font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #5e6055;
   }
   @media (prefers-reduced-motion: reduce) { #gate .rings .spin { animation: none; } }
+
+  /* Nuclear detonation sequence on unlock */
+  #gate .blast { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 5; overflow: hidden; }
+  #gate.detonating .blast { opacity: 1; }
+  #gate .blast .flash {
+    position: absolute; inset: -10%;
+    background: radial-gradient(circle at 50% 46%, #fff8ea 0%, #ffd98a 16%, #e8933c 38%, #7a3f13 58%, rgba(13,14,9,0) 72%);
+    opacity: 0; mix-blend-mode: screen;
+  }
+  #gate.detonating .blast .flash { animation: blastFlash 1s ease-out forwards; }
+  #gate .blast .shock {
+    position: absolute; top: 50%; left: 50%; width: 46vmin; height: 46vmin;
+    margin: -23vmin 0 0 -23vmin; fill: none; stroke: #ffb35c; stroke-width: 2.5;
+    opacity: 0; transform: scale(.04); filter: drop-shadow(0 0 6px rgba(255,160,60,.6));
+  }
+  #gate.detonating .blast .shock { animation: shockRing 1.3s cubic-bezier(.12,.68,.22,1) forwards; }
+  #gate.detonating .blast .shock2 { animation-delay: .1s; stroke: #e8933c; }
+  #gate.detonating .blast .shock3 { animation-delay: .22s; stroke: #a8601b; }
+  @keyframes blastFlash { 0% { opacity: 0; } 10% { opacity: 1; } 55% { opacity: .25; } 100% { opacity: 0; } }
+  @keyframes shockRing { 0% { opacity: .95; transform: scale(.04); } 65% { opacity: .4; } 100% { opacity: 0; transform: scale(2.1); } }
+  #gate.detonating .card { animation: gateRumble .55s ease-in-out; }
+  #gate.detonating .mark svg { animation: markGlow .9s ease-out; }
+  @keyframes gateRumble {
+    0%, 100% { transform: translate(0,0); }
+    15% { transform: translate(-4px,2px); } 30% { transform: translate(4px,-3px); }
+    45% { transform: translate(-5px,-1px); } 60% { transform: translate(5px,2px); }
+    75% { transform: translate(-2px,1px); } 90% { transform: translate(2px,-1px); }
+  }
+  @keyframes markGlow {
+    0% { filter: none; } 10% { filter: drop-shadow(0 0 22px #ffcf87) brightness(2.4); }
+    100% { filter: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #gate .blast, #gate.detonating .blast .flash, #gate.detonating .blast .shock,
+    #gate.detonating .card, #gate.detonating .mark svg { animation: none !important; }
+  }
 </style>
 </head>
 <body>
+
+<div id="silo" aria-hidden="true">
+  <div class="shaft"></div>
+  <div class="vignette"></div>
+</div>
+<div id="depth-readout" aria-hidden="true"><span class="dr-label">Silo Depth</span><span id="depth-val">0000</span><span class="dr-unit">FT</span></div>
 
 <div id="gate">
   <div class="rings" aria-hidden="true">
@@ -353,6 +430,12 @@
         <path d="M98 98L502 502M502 98L98 502" stroke-width="1" stroke-dasharray="2 20"/>
       </g>
     </svg>
+  </div>
+  <div class="blast" aria-hidden="true">
+    <div class="flash"></div>
+    <svg class="shock shock1" viewBox="0 0 600 600"><circle cx="300" cy="300" r="40"/></svg>
+    <svg class="shock shock2" viewBox="0 0 600 600"><circle cx="300" cy="300" r="40"/></svg>
+    <svg class="shock shock3" viewBox="0 0 600 600"><circle cx="300" cy="300" r="40"/></svg>
   </div>
 
   <div class="card">
@@ -428,12 +511,20 @@
   }
 
   function unlock(plaintext) {
-    vault.innerHTML = plaintext;
-    vault.hidden = false;
-    startCountdown();
-    gate.classList.add("lifting");
-    html.classList.remove("locked");
-    setTimeout(function () { if (gate && gate.parentNode) gate.parentNode.removeChild(gate); }, 600);
+    go.disabled = true;
+    go.textContent = "Unlock";
+    msg.textContent = "";
+    gate.classList.add("detonating");
+    var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var delay = reduced ? 0 : 1050;
+    setTimeout(function () {
+      vault.innerHTML = plaintext;
+      vault.hidden = false;
+      startCountdown();
+      gate.classList.add("lifting");
+      html.classList.remove("locked");
+      setTimeout(function () { if (gate && gate.parentNode) gate.parentNode.removeChild(gate); }, 600);
+    }, delay);
   }
 
   function attempt(e) {
@@ -473,6 +564,48 @@
   });
 
   pw.focus();
+})();
+</script>
+
+<script>
+(function () {
+  var shaft = document.querySelector("#silo .shaft");
+  var vignette = document.querySelector("#silo .vignette");
+  var depthVal = document.getElementById("depth-val");
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var ticking = false;
+
+  function update() {
+    ticking = false;
+    var doc = document.documentElement;
+    var max = (doc.scrollHeight || doc.offsetHeight) - window.innerHeight;
+    var y = window.scrollY || window.pageYOffset || 0;
+    var pct = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+
+    if (shaft) {
+      var shift = reduced ? 0 : -(pct * 260);
+      var scale = 1.08 + pct * 0.3;
+      shaft.style.transform = "translateY(" + shift.toFixed(1) + "px) scale(" + scale.toFixed(3) + ")";
+    }
+    if (vignette) {
+      vignette.style.opacity = (0.4 + pct * 0.42).toFixed(3);
+    }
+    if (depthVal) {
+      var ft = Math.round(pct * 1947);
+      depthVal.textContent = String(ft).padStart(4, "0");
+    }
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      window.requestAnimationFrame(update);
+      ticking = true;
+    }
+  }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  update();
 })();
 </script>
 
