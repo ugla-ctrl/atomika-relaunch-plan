@@ -428,6 +428,7 @@
   <div class="vignette"></div>
 </div>
 <div id="depth-readout" aria-hidden="true"><span class="dr-label">Silo Depth</span><span id="depth-val">0000</span><span class="dr-unit">FT</span></div>
+<audio id="silo-audio" src="assets/bunker.mp3" loop preload="auto"></audio>
 
 <div id="gate">
   <div class="rings" aria-hidden="true">
@@ -527,6 +528,12 @@
     go.textContent = "Unlock";
     msg.textContent = "";
     gate.classList.add("detonating");
+    var audio = document.getElementById("silo-audio");
+    if (audio) {
+      audio.currentTime = 0;
+      audio.volume = 0.85;
+      audio.play().catch(function () {});
+    }
     var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var delay = reduced ? 0 : 900;
     setTimeout(function () {
